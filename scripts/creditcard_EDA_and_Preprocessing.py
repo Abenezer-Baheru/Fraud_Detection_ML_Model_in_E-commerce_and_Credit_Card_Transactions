@@ -9,275 +9,323 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def load_data(file_path):
-    """
-    Load the dataset from the specified file path.
-    """
-    try:
-        data = pd.read_csv(file_path)
-        logging.info("Data loaded successfully.")
-        return data
-    except Exception as e:
-        logging.error(f"Error loading data: {e}")
-        return None
+class EDA_and_Preprocessing:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.data = None
 
-def clean_data(data):
-    """
-    Clean the dataset by checking for duplicates and correcting data types.
-    """
-    try:
-        # Remove duplicates
-        data = data.drop_duplicates()
-        logging.info("Duplicates removed.")
+    def load_data(self):
+        """Load the dataset from the specified file path."""
+        try:
+            self.data = pd.read_csv(self.file_path)
+            logging.info("Data loaded successfully.")
+        except Exception as e:
+            logging.error(f"Error loading data: {e}")
 
-        # Correct data types
-        data['Time'] = data['Time'].astype('float64')
-        data['Amount'] = data['Amount'].astype('float64')
-        data['Class'] = data['Class'].astype('int64')
+    def check_data_info(self):
+        """Check the size and missing values of the data."""
+        try:
+            print("Size of the data:")
+            print(self.data.shape)
 
-        # Ensure all V columns are float64
-        for col in data.columns:
-            if col.startswith('V'):
-                data[col] = data[col].astype('float64')
+            print("\nHead of the data:")
+            print(self.data.head())
 
-        logging.info("Data types corrected.")
-        return data
-    except Exception as e:
-        logging.error(f"Error cleaning data: {e}")
-        return None
+            print("\nMissing values in each column:")
+            print(self.data.isnull().sum())
+        except Exception as e:
+            logging.error(f"Error checking data information: {e}")
 
-def feature_engineering(data):
-    """
-    Perform feature engineering by creating new features.
-    """
-    try:
-        # Convert 'Time' to datetime
-        data['Time'] = pd.to_datetime(data['Time'], unit='s', origin='unix')
+    def clean_data(self):
+        """Remove duplicates and correct data types."""
+        try:
+            # Remove duplicates
+            self.data = self.data.drop_duplicates()
+            logging.info("Duplicates removed.")
 
-        # Extract the hour from the 'Time' column
-        data['Transaction_Hour'] = data['Time'].dt.hour
+            # Correct data types
+            self.data['Time'] = self.data['Time'].astype('float64')
+            self.data['Amount'] = self.data['Amount'].astype('float64')
+            self.data['Class'] = self.data['Class'].astype('int64')
 
-        # Extract the day of the week from the 'Time' column
-        data['Transaction_DayOfWeek'] = data['Time'].dt.dayofweek
+            # Ensure all V columns are float64
+            for col in self.data.columns:
+                if col.startswith('V'):
+                    self.data[col] = self.data[col].astype('float64')
 
-        # Define bins with a 500-unit interval for Amount
-        min_value = int(data['Amount'].min())
-        max_value = int(data['Amount'].max()) + 1
-        bins = list(range(min_value, max_value, 500)) + [max_value]
-        labels = [f"{i}-{i+500}" for i in bins[:-2]] + [f"{bins[-2]}+"]
-        data['Amount_Range'] = pd.cut(data['Amount'], bins=bins, labels=labels, include_lowest=True)
+            logging.info("Data types corrected.")
+        except Exception as e:
+            logging.error(f"Error cleaning data: {e}")
 
-        logging.info("Feature engineering completed.")
-        return data
-    except Exception as e:
-        logging.error(f"Error in feature engineering: {e}")
-        return None
+    def identify_outliers(self):
+        """Identify outliers in the dataset using the IQR method."""
+        try:
+            Q1 = self.data.quantile(0.25)
+            Q3 = self.data.quantile(0.75)
+            IQR = Q3 - Q1
 
-def preprocess_data(data):
-    """
-    Normalize, scale, and encode the dataset.
-    """
-    try:
-        # Normalize and scale numerical columns
-        numerical_columns = ['Amount'] + [f'V{i}' for i in range(1, 29)] + ['Transaction_Hour']
-        numerical_transformer = Pipeline(steps=[('scaler', StandardScaler())])
-        data[numerical_columns] = numerical_transformer.fit_transform(data[numerical_columns])
+            outliers = ((self.data < (Q1 - 1.5 * IQR)) | (self.data > (Q3 + 1.5 * IQR))).sum()
+            total_entries = self.data.count()
+            outlier_percentage = (outliers / total_entries) * 100
 
-        # Encode categorical columns
-        categorical_columns = ['Transaction_DayOfWeek', 'Amount_Range']
-        label_encoder = LabelEncoder()
-        for column in categorical_columns:
-            data[column] = label_encoder.fit_transform(data[column])
+            outlier_summary = pd.DataFrame({
+                'Number of Outliers': outliers,
+                'Percentage of Outliers (%)': outlier_percentage
+            })
 
-        logging.info("Data preprocessed.")
-        return data
-    except Exception as e:
-        logging.error(f"Error in data preprocessing: {e}")
-        return None
+            print(outlier_summary)
+        except Exception as e:
+            logging.error(f"Error identifying outliers: {e}")
 
-def plot_distributions(data):
-    """
-    Plot distributions for all columns.
-    """
-    try:
-        # Create subplots for remaining variables
-        fig, axes = plt.subplots(7, 4, figsize=(20, 25))
+    def remove_outliers(self, columns):
+        """Remove outliers based on the IQR method for specified columns."""
+        try:
+            for col in columns:
+                Q1 = self.data[col].quantile(0.25)
+                Q3 = self.data[col].quantile(0.75)
+                IQR = Q3 - Q1
+                lower_bound = Q1 - 1.5 * IQR
+                upper_bound = Q3 + 1.5 * IQR
+                self.data = self.data[(self.data[col] >= lower_bound) & (self.data[col] <= upper_bound)]
+            logging.info("Outliers removed.")
+        except Exception as e:
+            logging.error(f"Error removing outliers: {e}")
 
-        # List of columns for remaining variables
-        columns_to_analyze = [f'V{i}' for i in range(1, 29)]
+    def convert_time(self):
+        """Convert 'Time' column to datetime and extract useful features."""
+        try:
+            self.data['Time'] = pd.to_datetime(self.data['Time'], unit='s', origin='unix')
+            logging.info("Time column converted to datetime.")
+        except Exception as e:
+            logging.error(f"Error converting time: {e}")
 
-        # Plot each column
-        for i, col in enumerate(columns_to_analyze):
-            row, col_pos = divmod(i, 4)
-            sns.histplot(data[col], kde=True, ax=axes[row, col_pos])
-            axes[row, col_pos].set_title(f'Distribution of {col}')
-            axes[row, col_pos].set_xlabel(col)
-            axes[row, col_pos].set_ylabel('Frequency')
+    def plot_distributions(self):
+        """Plot distributions for Time, Amount, and Class."""
+        try:
+            fig, axes = plt.subplots(1, 3, figsize=(20, 6))
 
-        plt.tight_layout()
-        plt.show()
+            sns.histplot(self.data['Time'].dt.hour, kde=True, ax=axes[0])
+            axes[0].set_title('Distribution of Time (Hour)')
+            axes[0].set_xlabel('Hour')
+            axes[0].set_ylabel('Frequency')
 
-        logging.info("Distributions plotted successfully.")
-    except Exception as e:
-        logging.error(f"Error plotting distributions: {e}")
+            sns.histplot(self.data['Amount'], kde=True, ax=axes[1])
+            axes[1].set_title('Distribution of Amount')
+            axes[1].set_xlabel('Amount')
+            axes[1].set_ylabel('Frequency')
+            axes[1].set_ylim(0, 13566)
 
-def plot_bivariate_analysis(data):
-    """
-    Plot bivariate analysis for specified columns.
-    """
-    try:
-        # Create subplots
-        fig, axes = plt.subplots(1, 2, figsize=(20, 6))
+            class_counts = self.data['Class'].value_counts()
+            class_percentages = class_counts / class_counts.sum() * 100
+            axes[2].pie(class_percentages, labels=class_percentages.index, autopct='%1.1f%%', startangle=90, counterclock=False, colors=['#66b3ff','#ff6666'])
+            centre_circle = plt.Circle((0,0),0.70,fc='white')
+            axes[2].add_artist(centre_circle)
+            axes[2].set_title('Percentage of Class Values')
 
-        # Boxplot for Amount and Class
-        sns.boxplot(x='Class', y='Amount', data=data, ax=axes[0])
-        axes[0].set_title('Boxplot of Amount by Class')
-        axes[0].set_xlabel('Class')
-        axes[0].set_ylabel('Amount')
+            plt.tight_layout()
+            plt.show()
+            logging.info("Distributions plotted successfully.")
+        except Exception as e:
+            logging.error(f"Error plotting distributions: {e}")
 
-        # Boxplot for Time (Hour) and Class
-        sns.boxplot(x='Class', y=data['Time'].dt.hour, data=data, ax=axes[1])
-        axes[1].set_title('Boxplot of Time (Hour) by Class')
-        axes[1].set_xlabel('Class')
-        axes[1].set_ylabel('Time (Hour)')
+    def plot_remaining_variables(self):
+        """Create subplots for remaining variables."""
+        try:
+            fig, axes = plt.subplots(7, 4, figsize=(20, 25))
+            columns_to_analyze = [f'V{i}' for i in range(1, 29)]
 
-        plt.tight_layout()
-        plt.show()
+            for i, col in enumerate(columns_to_analyze):
+                row, col_pos = divmod(i, 4)
+                sns.histplot(self.data[col], kde=True, ax=axes[row, col_pos])
+                axes[row, col_pos].set_title(f'Distribution of {col}')
+                axes[row, col_pos].set_xlabel(col)
+                axes[row, col_pos].set_ylabel('Frequency')
 
-        logging.info("Bivariate analysis plotted successfully.")
-    except Exception as e:
-        logging.error(f"Error plotting bivariate analysis: {e}")
+            plt.tight_layout()
+            plt.show()
+            logging.info("Remaining variable distributions plotted successfully.")
+        except Exception as e:
+            logging.error(f"Error plotting remaining variable distributions: {e}")
 
-def plot_fraud_rates(data):
-    """
-    Plot fraud rates and total transactions by Amount range and Time (Hour).
-    """
-    try:
-        # Calculate the total number of transactions and fraudulent transactions by Amount range
-        total_transactions_by_amount_range = data['Amount_Range'].value_counts()
-        fraud_transactions_by_amount_range = data[data['Class'] == 1]['Amount_Range'].value_counts()
+    def plot_boxplots(self):
+        """Create boxplots for Amount and Class, and Time (Hour) and Class."""
+        try:
+            fig, axes = plt.subplots(1, 2, figsize=(20, 6))
 
-        # Calculate the fraud rate for each Amount range
-        fraud_rate_by_amount_range = (fraud_transactions_by_amount_range / total_transactions_by_amount_range) * 100
+            sns.boxplot(x='Class', y='Amount', data=self.data, ax=axes[0])
+            axes[0].set_title('Boxplot of Amount by Class')
+            axes[0].set_xlabel('Class')
+            axes[0].set_ylabel('Amount')
 
-        # Calculate the total number of transactions and fraudulent transactions by Hour
-        total_transactions_by_hour = data['Hour'].value_counts()
-        fraud_transactions_by_hour = data[data['Class'] == 1]['Hour'].value_counts()
+            sns.boxplot(x='Class', y=self.data['Time'].dt.hour, data=self.data, ax=axes[1])
+            axes[1].set_title('Boxplot of Time (Hour) by Class')
+            axes[1].set_xlabel('Class')
+            axes[1].set_ylabel('Time (Hour)')
 
-        # Calculate the fraud rate for each Hour
-        fraud_rate_by_hour = (fraud_transactions_by_hour / total_transactions_by_hour) * 100
+            plt.tight_layout()
+            plt.show()
+            logging.info("Boxplots plotted successfully.")
+        except Exception as e:
+            logging.error(f"Error plotting boxplots: {e}")
 
-        # Create DataFrames for visualization
-        amount_range_data = pd.DataFrame({
-            'Amount Range': fraud_rate_by_amount_range.index,
-            'Fraud Rate (%)': fraud_rate_by_amount_range.values,
-            'Total Transactions': total_transactions_by_amount_range[fraud_rate_by_amount_range.index].values
-        })
+    def plot_bivariate_analysis(self):
+        """Create subplots for bivariate analysis."""
+        try:
+            fig, axes = plt.subplots(7, 4, figsize=(20, 40))
+            columns_to_analyze = [f'V{i}' for i in range(1, 29)]
 
-        hour_data = pd.DataFrame({
-            'Hour': fraud_rate_by_hour.index,
-            'Fraud Rate (%)': fraud_rate_by_hour.values,
-            'Total Transactions': total_transactions_by_hour[fraud_rate_by_hour.index].values
-        })
+            for i, col in enumerate(columns_to_analyze):
+                row, col_pos = divmod(i, 4)
+                sns.boxplot(x='Class', y=col, data=self.data, ax=axes[row, col_pos])
+                axes[row, col_pos].set_title(f'Boxplot of {col} by Class')
+                axes[row, col_pos].set_xlabel('Class')
+                axes[row, col_pos].set_ylabel(col)
 
-        # Create the figure and axes for subplots
-        fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+            plt.tight_layout()
+            plt.show()
+            logging.info("Bivariate analysis plotted successfully.")
+        except Exception as e:
+            logging.error(f"Error plotting bivariate analysis: {e}")
 
-        # Plot the fraud rate and total transactions by Amount range
-        sns.barplot(x='Amount Range', y='Fraud Rate (%)', data=amount_range_data, palette='viridis', ax=axes[0])
-        axes[0].set_title('Fraud Rate and Total Transactions by Amount Range')
-        axes[0].set_xlabel('Amount Range')
-        axes[0].set_ylabel('Fraud Rate (%)')
-        ax2 = axes[0].twinx()
-        sns.lineplot(x='Amount Range', y='Total Transactions', data=amount_range_data, color='red', marker='o', ax=ax2)
-        ax2.set_ylabel('Total Transactions')
-        axes[0].tick_params(axis='x', rotation=90)
+    def analyze_fraud_rate(self):
+        """Analyze fraud rate by Amount range and Hour."""
+        try:
+            self.data['Amount'] = pd.to_numeric(self.data['Amount'], errors='coerce')
+            self.data = self.data.dropna(subset=['Amount'])
 
-        # Plot the fraud rate and total transactions by Hour
-        sns.barplot(x='Hour', y='Fraud Rate (%)', data=hour_data, palette='viridis', ax=axes[1])
-        axes[1].set_title('Fraud Rate and Total Transactions by Hour')
-        axes[1].set_xlabel('Time (Hour)')
-        axes[1].set_ylabel('Fraud Rate (%)')
-        ax2 = axes[1].twinx()
-        sns.lineplot(x='Hour', y='Total Transactions', data=hour_data, color='red', marker='o', ax=ax2)
-        ax2.set_ylabel('Total Transactions')
+            min_value = int(self.data['Amount'].min())
+            max_value = int(self.data['Amount'].max()) + 1
+            bins = list(range(min_value, max_value, 500)) + [max_value]
+            labels = [f"{i}-{i+500}" for i in bins[:-2]] + [f"{bins[-2]}+"]
+            self.data['Amount_range'] = pd.cut(self.data['Amount'], bins=bins, labels=labels, include_lowest=True)
 
-        plt.tight_layout()
-        plt.show()
+            self.data['Time'] = pd.to_datetime(self.data['Time'], unit='s', origin='unix')
+            self.data['Hour'] = self.data['Time'].dt.hour
 
-        logging.info("Fraud rates plotted successfully.")
-    except Exception as e:
-        logging.error(f"Error plotting fraud rates: {e}")
+            total_transactions_by_amount_range = self.data['Amount_range'].value_counts()
+            fraud_transactions_by_amount_range = self.data[self.data['Class'] == 1]['Amount_range'].value_counts()
+            fraud_rate_by_amount_range = (fraud_transactions_by_amount_range / total_transactions_by_amount_range) * 100
 
-def plot_correlation_heatmap(data):
-    """
-    Plot a heatmap to visualize the correlations between all columns.
-    """
-    try:
-        # Compute the correlation matrix
-        corr_matrix = data.corr()
+            total_transactions_by_hour = self.data['Hour'].value_counts()
+            fraud_transactions_by_hour = self.data[self.data['Class'] == 1]['Hour'].value_counts()
+            fraud_rate_by_hour = (fraud_transactions_by_hour / total_transactions_by_hour) * 100
 
-        # Create a heatmap
-        plt.figure(figsize=(20, 15))
-        sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm', cbar=True)
-        plt.title('Heatmap of Correlations Between All Columns')
-        plt.show()
+            amount_range_data = pd.DataFrame({
+                'Amount Range': fraud_rate_by_amount_range.index,
+                'Fraud Rate (%)': fraud_rate_by_amount_range.values,
+                'Total Transactions': total_transactions_by_amount_range[fraud_rate_by_amount_range.index].values
+            })
 
-        logging.info("Correlation heatmap plotted successfully.")
-    except Exception as e:
-        logging.error(f"Error plotting correlation heatmap: {e}")
+            hour_data = pd.DataFrame({
+                'Hour': fraud_rate_by_hour.index,
+                'Fraud Rate (%)': fraud_rate_by_hour.values,
+                'Total Transactions': total_transactions_by_hour[fraud_rate_by_hour.index].values
+            })
 
-def save_data(data, file_path):
-    """
-    Save the processed data to the specified file path.
-    """
-    try:
-        data.to_csv(file_path, index=False)
-        logging.info(f"Final processed data has been saved to '{file_path}'.")
-    except Exception as e:
-        logging.error(f"Error saving data: {e}")
+            fig, axes = plt.subplots(1, 2, figsize=(18, 6))
+
+            sns.barplot(x='Amount Range', y='Fraud Rate (%)', data=amount_range_data, palette='viridis', ax=axes[0])
+            axes[0].set_title('Fraud Rate and Total Transactions by Amount Range')
+            axes[0].set_xlabel('Amount Range')
+            axes[0].set_ylabel('Fraud Rate (%)')
+            ax2 = axes[0].twinx()
+            sns.lineplot(x='Amount Range', y='Total Transactions', data=amount_range_data, color='red', marker='o', ax=ax2)
+            ax2.set_ylabel('Total Transactions')
+            axes[0].tick_params(axis='x', rotation=90)
+
+            sns.barplot(x='Hour', y='Fraud Rate (%)', data=hour_data, palette='viridis', ax=axes[1])
+            axes[1].set_title('Fraud Rate and Total Transactions by Hour')
+            axes[1].set_xlabel('Time (Hour)')
+            axes[1].set_ylabel('Fraud Rate (%)')
+            ax2 = axes[1].twinx()
+            sns.lineplot(x='Hour', y='Total Transactions', data=hour_data, color='red', marker='o', ax=ax2)
+            ax2.set_ylabel('Total Transactions')
+
+            plt.tight_layout()
+            plt.show()
+
+            print("\nTable: Fraud Rate and Total Transactions by Amount Range")
+            print(amount_range_data)
+            print("\nTable: Fraud Rate and Total Transactions by Hour")
+            print(hour_data)
+            logging.info("Fraud rate analysis completed successfully.")
+        except Exception as e:
+            logging.error(f"Error analyzing fraud rate: {e}")
+
+    def compute_correlation_matrix(self):
+        """Compute and plot the correlation matrix."""
+        try:
+            corr_matrix = self.data.corr()
+
+            plt.figure(figsize=(20, 15))
+            sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm', cbar=True)
+            plt.title('Heatmap of Correlations Between All Columns')
+            plt.show()
+            logging.info("Correlation matrix computed and plotted successfully.")
+        except Exception as e:
+            logging.error(f"Error computing correlation matrix: {e}")
+
+    def feature_engineering(self):
+        """Perform feature engineering on the dataset."""
+        try:
+            self.data['Time'] = pd.to_datetime(self.data['Time'], unit='s', origin='unix')
+            self.data['Transaction_Hour'] = self.data['Time'].dt.hour
+            self.data['Transaction_DayOfWeek'] = self.data['Time'].dt.dayofweek
+
+            min_value = int(self.data['Amount'].min())
+            max_value = int(self.data['Amount'].max()) + 1
+            bins = list(range(min_value, max_value, 500)) + [max_value]
+            labels = [f"{i}-{i+500}" for i in bins[:-2]] + [f"{bins[-2]}+"]
+            self.data['Amount_Range'] = pd.cut(self.data['Amount'], bins=bins, labels=labels, include_lowest=True)
+
+            logging.info("Feature engineering completed successfully.")
+        except Exception as e:
+            logging.error(f"Error in feature engineering: {e}")
+
+    def preprocess_data(self):
+        """Preprocess the data by scaling numerical columns and encoding categorical columns."""
+        try:
+            numerical_columns = ['Amount'] + [f'V{i}' for i in range(1, 29)] + ['Transaction_Hour']
+            numerical_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+            self.data[numerical_columns] = numerical_transformer.fit_transform(self.data[numerical_columns])
+
+            categorical_columns = ['Transaction_DayOfWeek', 'Amount_Range']
+            label_encoder = LabelEncoder()
+            for column in categorical_columns:
+                self.data[column] = label_encoder.fit_transform(self.data[column])
+
+            logging.info("Data preprocessed successfully.")
+        except Exception as e:
+            logging.error(f"Error in data preprocessing: {e}")
+
+    def save_data(self, output_path):
+        """Save the processed data to the specified file path."""
+        try:
+            self.data.to_csv(output_path, index=False)
+            logging.info(f"Final processed data has been saved to '{output_path}'.")
+        except Exception as e:
+            logging.error(f"Error saving data: {e}")
 
 def main():
-    """
-    Main function to perform EDA and preprocessing.
-    """
     file_path = '../../src/data/creditcard.csv'
-    processed_file_path = '../../src/data/creditcard_final_processed_data.csv'
+    output_path = '../../src/data/creditcard_processed_data.csv'
+    eda = EDA_and_Preprocessing(file_path)
 
-    # Load data
-    data = load_data(file_path)
-    if data is None:
-        return
-
-    # Clean data
-    data = clean_data(data)
-    if data is None:
-        return
-
-    # Feature engineering
-    data = feature_engineering(data)
-    if data is None:
-        return
-
-    # Preprocess data
-    data = preprocess_data(data)
-    if data is None:
-        return
-
-    # Plot distributions
-    plot_distributions(data)
-
-    # Plot bivariate analysis
-    plot_bivariate_analysis(data)
-
-    # Plot fraud rates
-    plot_fraud_rates(data)
-
-    # Plot correlation heatmap
-    plot_correlation_heatmap(data)
-
-    # Save processed data
-    save_data(data, processed_file_path)
+    eda.load_data()
+    eda.check_data_info()
+    eda.clean_data()
+    eda.identify_outliers()
+    eda.remove_outliers(columns=['Amount', 'Class'])
+    eda.convert_time()
+    eda.plot_distributions()
+    eda.plot_remaining_variables()
+    eda.plot_boxplots()
+    eda.plot_bivariate_analysis()
+    eda.analyze_fraud_rate()
+    eda.compute_correlation_matrix()
+    eda.feature_engineering()
+    eda.preprocess_data()
+    eda.save_data(output_path)
 
 if __name__ == "__main__":
     main()
