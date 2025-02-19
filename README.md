@@ -1,12 +1,43 @@
-# Credit Card Fraud Detection - EDA and Preprocessing
+Here's the updated final `README.md` including the refined folder structure and all relevant project details:
+
+# Fraud Detection - EDA, Preprocessing, Model Building, and Deployment
 
 ## Project Overview
-This project focuses on performing Exploratory Data Analysis (EDA) and preprocessing for credit card fraud detection. The goal is to clean the dataset, perform feature engineering, analyze the data, and prepare it for model building.
+This project focuses on enhancing fraud detection for e-commerce transactions and bank credit transactions. The goal is to clean the dataset, perform feature engineering, analyze the data, build and evaluate machine learning models, and deploy the models for real-time fraud detection.
 
 ## Folder Structure
 The project directory is structured as follows:
-├── notebooks/ │ ├── creditcard_EDA_and_Preprocessing.ipynb │ ├── e-commerce_EDA_and_Preprocessing.ipynb │ ├── IP_Address_EDA_and_Preprocessing.ipynb │ ├── creditcard_model.ipynb │ ├── e-commerce_model.ipynb │ ├── init.py │ └── README.md└── scripts/ │ ├── creditcard_EDA_and_Preprocessing.py │ ├── e-commerce_EDA_and_Preprocessing.py │ ├── init.py │ └── README.md├── src/ │ ├── data/ │ │ ├── creditcard.csv│ │ ├── Fraud_Data.csv │ │ ├── IpAddress_to_Country.csv │ ├── init.py ├── tests/ │ ├── test_creditcard_EDA_and_Preprocessing.py │ ├── test_e-commerce_EDA_and_Preprocessing.py │ ├── init.py ├── .gitignore ├── requirements.txt├── README.md
-
+```
+├── notebooks/
+    ├── EDA_and_Preprocessing/
+        ├── creditcard_EDA_and_Preprocessing.ipynb
+        ├── e-commerce_EDA_and_Preprocessing.ipynb
+    ├── models/
+        ├── creditcard_model_withClassBalance.ipynb
+        ├── e-commerce_model_withClassBalance.ipynb
+        ├── e-commerce_model_withoutClassBalance.ipynb
+    ├── __init__.py
+    └── README.md
+├── scripts/
+    ├── creditcard_EDA_and_Preprocessing.py
+    ├── e-commerce_EDA_and_Preprocessing.py
+    ├── init.py
+    └── README.md
+├── src/
+    ├── data/
+        ├── creditcard.csv
+        ├── Fraud_Data.csv
+        ├── IpAddress_to_Country.csv
+        ├── creditcard_processed_data.csv
+        ├── e-commerce_processed_data.csv
+    ├── __init__.py
+├── tests/
+    ├── test_creditcard_EDA_and_Preprocessing.py
+    ├── __init__.py
+├── .gitignore
+├── requirements.txt
+├── README.md
+```
 
 ## Setup and Installation
 
@@ -49,9 +80,9 @@ The project directory is structured as follows:
 
 ### Running the Notebook
 
-1. Open the `notebooks/creditcard_EDA_and_Preprocessing.ipynb` notebook in Jupyter:
+1. Open the `notebooks/EDA_and_Preprocessing/creditcard_EDA_and_Preprocessing.ipynb` notebook in Jupyter:
     ```bash
-    jupyter notebook notebooks/creditcard_EDA_and_Preprocessing.ipynb
+    jupyter notebook notebooks/EDA_and_Preprocessing/creditcard_EDA_and_Preprocessing.ipynb
     ```
 
 2. Execute the cells in the notebook step-by-step. The notebook calls the functions from the `creditcard_EDA_and_Preprocessing.py` script and performs the analysis and preprocessing tasks.
@@ -70,6 +101,32 @@ The project directory is structured as follows:
 
    The unit tests will verify the functionality of the functions in the `creditcard_EDA_and_Preprocessing.py` script.
 
+## Building and Deploying the Fraud Detection Model
+
+1. **Model Building**:
+   - Use scripts and notebooks provided in the `notebooks/models/` directory for model building and evaluation.
+   - Train models such as Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, Multi-Layer Perceptron (MLP), CNN, RNN, and LSTM.
+
+2. **Model Explainability**:
+   - Use SHAP and LIME for model interpretability, ensuring transparency and trust in model predictions.
+
+3. **Model Deployment**:
+   - Use the `api_fraud_detection/` directory to deploy the model using Flask and Docker.
+   - Follow the instructions in `serve_model.py`, `Dockerfile`, and `requirements.txt` for deployment.
+
+4. **Running the Flask Application**:
+    ```bash
+    cd api_fraud_detection
+    python serve_model.py
+    ```
+
+5. **Building and Running Docker Container**:
+    ```bash
+    cd api_fraud_detection
+    docker build -t fraud-detection-model .
+    docker run -p 5000:5000 fraud-detection-model
+    ```
+
 ## Project Components
 
 ### Data Analysis and Preprocessing
@@ -83,6 +140,18 @@ The project directory is structured as follows:
 
 ### Visualizations
 - Plot distributions, bivariate analysis, fraud rates, and correlation heatmaps.
+
+### Model Building and Evaluation
+- Train various models and evaluate their performance.
+- Use SMOTE for class balancing.
+- Implement model explainability using SHAP and LIME.
+
+### Model Deployment
+- Deploy the model using Flask and Docker.
+- Create a RESTful API for real-time fraud detection.
+
+### Dashboard and Visualization
+- Build an interactive dashboard using Dash and Flask for visualizing fraud insights.
 
 ### Authors
 - **Abenezer Baheru** - *Initial work* - [GitHub Profile](https://github.com/Abenezer-Baheru)
