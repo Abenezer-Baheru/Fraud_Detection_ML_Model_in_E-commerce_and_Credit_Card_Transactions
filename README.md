@@ -1,4 +1,4 @@
-Here's the updated final `README.md`:
+Got it! Let's update the `README.md` to reflect the current structure and usage. Here's the updated version:
 
 # Fraud Detection ML Model in E-commerce and Credit Card Transactions
 
@@ -18,11 +18,6 @@ The project directory is structured as follows:
         ├── e-commerce_model_withoutClassBalance.ipynb
     ├── __init__.py
     └── README.md
-├── scripts/
-    ├── creditcard_EDA_and_Preprocessing.py
-    ├── e-commerce_EDA_and_Preprocessing.py
-    ├── __init__.py
-    └── README.md
 ├── src/
     ├── data/
         ├── creditcard.csv
@@ -39,6 +34,14 @@ The project directory is structured as follows:
     ├── gb_e-commerce_model.pkl
     ├── requirements.txt
     ├── serve_model.py
+├── fraud_dashboard/
+    ├── app.py
+    ├── dashboard.py
+    ├── docker-compose.yml
+    ├── Dockerfile
+    ├── requirements.txt
+    ├── __init__.py
+    └── README.md
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
@@ -69,28 +72,14 @@ The project directory is structured as follows:
 
 ## Running the Analysis and Preprocessing
 
-### Running the Scripts
-
-1. Navigate to the `scripts` directory:
-    ```bash
-    cd scripts
-    ```
-
-2. Run the `creditcard_EDA_and_Preprocessing.py` script:
-    ```bash
-    python creditcard_EDA_and_Preprocessing.py
-    ```
-
-   This script will load the dataset, clean the data, perform feature engineering, preprocess the data, and save the processed data to the specified path.
-
-### Running the Notebook
+### Running the Notebooks
 
 1. Open the `notebooks/EDA_and_Preprocessing/creditcard_EDA_and_Preprocessing.ipynb` notebook in Jupyter:
     ```bash
     jupyter notebook notebooks/EDA_and_Preprocessing/creditcard_EDA_and_Preprocessing.ipynb
     ```
 
-2. Execute the cells in the notebook step-by-step. The notebook calls the functions from the `creditcard_EDA_and_Preprocessing.py` script and performs the analysis and preprocessing tasks.
+2. Execute the cells in the notebook step-by-step. The notebook performs the analysis and preprocessing tasks.
 
 ## Running the Unit Tests
 
@@ -131,6 +120,28 @@ The project directory is structured as follows:
     docker build -t fraud-detection-model .
     docker run -p 5000:5000 fraud-detection-model
     ```
+
+## Building a Dashboard with Flask and Dash
+
+1. **Set Up Your Flask Application**:
+   - Create a `app.py` file for your Flask application.
+   - Define the main route and run the server.
+
+2. **Integrate Dash into Flask**:
+   - Create a `dashboard.py` file to set up the Dash app.
+   - Integrate Dash with Flask by using the Flask server as the backend for Dash.
+
+3. **Set Up Docker Compose**:
+   - Create a `docker-compose.yml` file to manage multi-container Docker applications.
+
+4. **Build and Run Docker Container**:
+   ```bash
+   cd fraud_dashboard
+   docker-compose up --build
+   ```
+
+5. **Navigate to the Dashboard**:
+   - Open your browser and navigate to `http://127.0.0.1:8050/dashboard/` to see the Dash dashboard.
 
 ## Project Components
 
