@@ -1,6 +1,6 @@
-Here's the updated final `README.md` including the refined folder structure and all relevant project details:
+Here's the updated final `README.md`:
 
-# Fraud Detection - EDA, Preprocessing, Model Building, and Deployment
+# Fraud Detection ML Model in E-commerce and Credit Card Transactions
 
 ## Project Overview
 This project focuses on enhancing fraud detection for e-commerce transactions and bank credit transactions. The goal is to clean the dataset, perform feature engineering, analyze the data, build and evaluate machine learning models, and deploy the models for real-time fraud detection.
@@ -21,7 +21,7 @@ The project directory is structured as follows:
 ├── scripts/
     ├── creditcard_EDA_and_Preprocessing.py
     ├── e-commerce_EDA_and_Preprocessing.py
-    ├── init.py
+    ├── __init__.py
     └── README.md
 ├── src/
     ├── data/
@@ -34,6 +34,11 @@ The project directory is structured as follows:
 ├── tests/
     ├── test_creditcard_EDA_and_Preprocessing.py
     ├── __init__.py
+├── api_fraud_detection/
+    ├── Dockerfile
+    ├── gb_e-commerce_model.pkl
+    ├── requirements.txt
+    ├── serve_model.py
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
